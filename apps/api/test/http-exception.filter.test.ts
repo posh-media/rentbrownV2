@@ -52,6 +52,40 @@ describe("HttpExceptionFilter", () => {
     expect(JSON.stringify(body)).not.toContain("db.internal");
   });
 
+  it("maps pg connectivity failures to 503 DATABASE_UNAVAILABLE", () => {
+    const { host, res } = makeHost();
+    new HttpExceptionFilter(config(false)).catch(
+      Object.assign(new Error("connect failed"), { code: "ECONNREFUSED" }),
+      host,
+    );
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+    const body = res.json.mock.calls[0]![0] as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("DATABASE_UNAVAILABLE");
+    expect(body.error.message).toBe("Service temporarily unavailable");
+  });
+
+  it("maps pg AggregateError (pool connect) to 503 DATABASE_UNAVAILABLE", () => {
+    const { host, res } = makeHost();
+    const agg = new AggregateError([
+      Object.assign(new Error("a"), { code: "ECONNREFUSED" }),
+      Object.assign(new Error("b"), { code: "ETIMEDOUT" }),
+    ]);
+    new HttpExceptionFilter(config(false)).catch(agg, host);
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+    const body = res.json.mock.calls[0]![0] as { error: { code: string } };
+    expect(body.error.code).toBe("DATABASE_UNAVAILABLE");
+  });
+
+  it("does not map mixed AggregateError to DATABASE_UNAVAILABLE", () => {
+    const { host, res } = makeHost();
+    const agg = new AggregateError([
+      Object.assign(new Error("a"), { code: "ECONNREFUSED" }),
+      new Error("unrelated"),
+    ]);
+    new HttpExceptionFilter(config(false)).catch(agg, host);
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+  });
+
   it("includes raw error message outside production", () => {
     const { host, res } = makeHost();
     new HttpExceptionFilter(config(false)).catch(new Error("boom detail"), host);

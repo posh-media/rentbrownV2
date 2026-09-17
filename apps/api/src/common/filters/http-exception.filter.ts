@@ -8,6 +8,29 @@ import { requestContext } from "../logging/json-logger.js";
  * Global error surface — never leaks secrets, stack traces, DB details, or PII
  * in production responses. Consistent ApiError shape for all clients.
  */
+const DB_CONN_CODES = new Set([
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "57P01", // admin_shutdown
+  "57P03", // cannot_connect_now
+  "08000", // connection_exception
+  "08003", // connection_does_not_exist
+  "08006", // connection_failure
+]);
+
+/** pg/pool connectivity failures — surface 503, never the driver internals */
+function isDbConnectivityError(err: unknown): boolean {
+  const hasCode = (e: unknown) =>
+    typeof (e as { code?: unknown })?.code === "string" &&
+    DB_CONN_CODES.has((e as { code: string }).code);
+  if (hasCode(err)) return true;
+  if (err instanceof AggregateError) {
+    return err.errors.length > 0 && err.errors.every(hasCode);
+  }
+  return false;
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   constructor(private readonly config: AppConfigService) {}
@@ -41,12 +64,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (typeof body === "object" && body !== null && "details" in body) {
         details = (body as { details: unknown }).details;
       }
+    } else if (isDbConnectivityError(exception)) {
+      status = HttpStatus.SERVICE_UNAVAILABLE;
+      code = "DATABASE_UNAVAILABLE";
+      message = "Service temporarily unavailable";
     } else if (exception instanceof Error) {
       // never surface raw error text in production
       message = this.config.isProd ? "Something went wrong" : exception.message;
     }
 
-    if (status >= 500) {
+    if (status >= 500 || code === "DATABASE_UNAVAILABLE") {
       // server-side log retains the real error; client gets a sanitized shape
       console.error(
         JSON.stringify({

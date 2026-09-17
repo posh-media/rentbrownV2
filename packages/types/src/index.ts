@@ -23,6 +23,8 @@ export interface Paginated<T> {
 }
 
 // ── Identity ──────────────────────────────────────────────────
+export type AccountStatus = "ACTIVE" | "RESTRICTED" | "SUSPENDED" | "CLOSED";
+
 export interface UserDto {
   id: string;
   externalSubject: string;
@@ -32,7 +34,103 @@ export interface UserDto {
   referralCode: string | null;
   accountCurrency: CurrencyCode;
   displayCurrency: CurrencyCode;
-  accountStatus: "ACTIVE" | "RESTRICTED" | "SUSPENDED" | "CLOSED";
+  accountStatus: AccountStatus;
+  createdAt: string;
+}
+
+export interface NotificationPrefs {
+  push?: boolean;
+  email?: boolean;
+  marketing?: boolean;
+  maturity?: boolean;
+  security?: boolean;
+}
+
+export interface KycSummaryDto {
+  status: string;
+  tier: number;
+  caseId?: string;
+}
+
+export interface MeDto extends UserDto {
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  timezone: string | null;
+  notificationPrefs: NotificationPrefs;
+  emailVerifiedAt: string | null;
+  roles: string[];
+  permissions: string[];
+  pendingConsents: string[];
+  kyc: KycSummaryDto;
+  capabilities: CapabilityMap;
+}
+
+export interface AdminUserDto extends UserDto {
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  statusReason: string | null;
+  statusChangedAt: string | null;
+  lastSeenAt: string | null;
+  roles: string[];
+}
+
+export interface ConsentSummaryDto {
+  docType: string;
+  version: string;
+  acceptedAt: string;
+}
+
+// ── Legal / consents ──────────────────────────────────────────
+export interface LegalDocumentDto {
+  id: string;
+  docType: string;
+  version: string;
+  title: string;
+  summary: string | null;
+  contentUrl: string | null;
+  effectiveAt: string | null;
+  publishedAt: string;
+}
+
+export interface ConsentDto {
+  id: string;
+  termsVersionId: string;
+  docType: string;
+  version: string;
+  acceptedAt: string;
+  platform: PlatformName | null;
+}
+
+// ── RBAC / admin ──────────────────────────────────────────────
+export interface RoleDto {
+  id: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  permissions: string[];
+}
+
+export interface PolicyDto {
+  key: string;
+  value: unknown;
+  description: string | null;
+  version: number;
+  updatedBy: string | null;
+  updatedAt: string;
+}
+
+export interface AuditEventDto {
+  id: string;
+  actorId: string | null;
+  actorType: string;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  requestId: string | null;
+  diffRedacted: unknown;
+  metadata: unknown;
   createdAt: string;
 }
 

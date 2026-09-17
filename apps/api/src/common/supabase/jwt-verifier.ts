@@ -8,6 +8,16 @@ export interface SupabaseIdentity {
   subject: string;
   email?: string;
   role?: string;
+  /** authenticator assurance level — aal2 means MFA verified this session */
+  aal?: "aal1" | "aal2";
+  /** authentication methods reference (amr claim) */
+  amr?: unknown[];
+  /** Supabase session id (session_id claim) */
+  sessionId?: string;
+  /** token issued-at (iat claim, seconds) */
+  issuedAt?: number;
+  /** user_metadata.email_verified, when present */
+  emailVerified?: boolean;
   appMetadata: Record<string, unknown>;
   userMetadata: Record<string, unknown>;
 }
@@ -50,12 +60,19 @@ export class SupabaseJwtVerifier {
       }
     }
     if (!payload.sub) throw new UnauthorizedException("Token missing subject");
+    const userMetadata = (payload.user_metadata as Record<string, unknown>) ?? {};
     return {
       subject: payload.sub,
       email: typeof payload.email === "string" ? payload.email : undefined,
       role: typeof payload.role === "string" ? payload.role : undefined,
+      aal: payload.aal === "aal1" || payload.aal === "aal2" ? payload.aal : undefined,
+      amr: Array.isArray(payload.amr) ? payload.amr : undefined,
+      sessionId: typeof payload.session_id === "string" ? payload.session_id : undefined,
+      issuedAt: typeof payload.iat === "number" ? payload.iat : undefined,
+      emailVerified:
+        typeof userMetadata.email_verified === "boolean" ? userMetadata.email_verified : undefined,
       appMetadata: (payload.app_metadata as Record<string, unknown>) ?? {},
-      userMetadata: (payload.user_metadata as Record<string, unknown>) ?? {},
+      userMetadata,
     };
   }
 }

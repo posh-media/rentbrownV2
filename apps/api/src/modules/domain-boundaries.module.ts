@@ -42,10 +42,4 @@ export class KycModule {}
 export class NotificationsModule {}
 
 @Module({})
-export class AdminModule {}
-
-@Module({})
 export class FxModule {}
-
-@Module({})
-export class PoliciesModule {}

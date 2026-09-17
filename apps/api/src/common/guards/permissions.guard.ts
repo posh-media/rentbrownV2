@@ -4,17 +4,20 @@ import { Reflector } from "@nestjs/core";
 import { PERMISSIONS_KEY } from "../decorators/permissions.decorator.js";
 import type { AuthenticatedRequest } from "./supabase-auth.guard.js";
 import { UsersService } from "../../modules/users/users.service.js";
+import { RolesService } from "../../modules/rbac/roles.service.js";
 
 /**
- * RBAC guard — runs after SupabaseAuthGuard, checks that the internal user
- * holds every permission declared via @RequirePermissions. Modules that use
- * this guard must import UsersModule so UsersService resolves.
+ * RBAC guard — runs after SupabaseAuthGuard (and InternalUserGuard when
+ * composed via @AdminOnly), checks that the internal user holds every
+ * permission declared via @RequirePermissions. Reuses `request.user` when the
+ * internal-user guard already provisioned it.
  */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly users: UsersService,
+    private readonly roles: RolesService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -27,8 +30,8 @@ export class PermissionsGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
     if (!req.identity) throw new UnauthorizedException();
 
-    const user = await this.users.findOrProvision(req.identity);
-    const granted = await this.users.permissionsFor(user.id);
+    const user = req.user ?? (await this.users.findOrProvision(req.identity));
+    const granted = await this.roles.permissionsFor(user.id);
 
     const missing = required.filter((p) => !granted.has(p));
     if (missing.length > 0) {

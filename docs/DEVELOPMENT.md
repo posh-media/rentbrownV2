@@ -79,6 +79,26 @@ curl -X POST localhost:3001/v1/jobs/sweep/ops.heartbeat \
 4. `GET /v1/users/me` provisions the internal `users` row on first call
    (just-in-time provisioning keyed on `sub`).
 
+## Admin roles
+
+The `investor` role is assigned automatically at provisioning. To create the
+first super_admin (or grant any role) run:
+
+```bash
+pnpm --filter @rentbrown/api grant-role -- <email> <role>
+# roles: investor support kyc_reviewer ops_admin finance_admin super_admin
+```
+
+The grant writes a `rbac.role_assigned` audit event (`actorType: SYSTEM`,
+`metadata.source: "cli"`). Alternatively set `BOOTSTRAP_SUPER_ADMIN_EMAILS`
+to a comma-separated list — matching emails get `super_admin` on their first
+authenticated request. `super_admin` grants via the API require the actor to
+already hold `super_admin`.
+
+Admin endpoints (`/v1/admin/*`) require Supabase MFA (`aal2`) while the
+`admin.mfa_required` policy is true. `ADMIN_MFA_ENFORCE=false` disables the
+check for local dev only — it is ignored when `APP_ENV=production`.
+
 ## Tests
 
 ```bash

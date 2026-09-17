@@ -5,6 +5,7 @@ import type { Reflector } from "@nestjs/core";
 import { SupabaseAuthGuard } from "../src/common/guards/supabase-auth.guard.js";
 import { PermissionsGuard } from "../src/common/guards/permissions.guard.js";
 import type { SupabaseJwtVerifier } from "../src/common/supabase/jwt-verifier.js";
+import type { RolesService } from "../src/modules/rbac/roles.service.js";
 import type { UsersService } from "../src/modules/users/users.service.js";
 
 function ctx(headers: Record<string, string>, identity?: unknown): ExecutionContext {
@@ -47,9 +48,11 @@ describe("PermissionsGuard", () => {
     } as unknown as Reflector;
     const users = {
       findOrProvision: vi.fn().mockResolvedValue({ id: "u1" }),
-      permissionsFor: vi.fn().mockResolvedValue(granted),
     } as unknown as UsersService;
-    return new PermissionsGuard(reflector, users);
+    const roles = {
+      permissionsFor: vi.fn().mockResolvedValue(granted),
+    } as unknown as RolesService;
+    return new PermissionsGuard(reflector, users, roles);
   }
 
   it("allows when no permissions are required", async () => {

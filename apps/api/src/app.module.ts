@@ -12,8 +12,11 @@ import { HealthModule } from "./modules/health/health.module.js";
 import { JobsModule } from "./modules/jobs/jobs.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { WalletModule } from "./modules/wallet/wallet.module.js";
+import { RbacModule } from "./modules/rbac/rbac.module.js";
+import { PoliciesModule } from "./modules/policies/policies.module.js";
+import { LegalModule } from "./modules/legal/legal.module.js";
+import { AdminModule } from "./modules/admin/admin.module.js";
 import {
-  AdminModule,
   FxModule,
   InvestmentsModule,
   InvestmentPlansModule,
@@ -22,7 +25,6 @@ import {
   LedgerModule,
   NotificationsModule,
   PaymentsModule,
-  PoliciesModule,
   PropertiesModule,
   ReferralsModule,
   RewardsModule,
@@ -40,7 +42,11 @@ import {
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     HealthModule,
     JobsModule,
+    RbacModule,
     UsersModule,
+    PoliciesModule,
+    LegalModule,
+    AdminModule,
     WalletModule,
     // domain boundaries — populated in later phases
     PropertiesModule,
@@ -54,9 +60,7 @@ import {
     RewardsModule,
     KycModule,
     NotificationsModule,
-    AdminModule,
     FxModule,
-    PoliciesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

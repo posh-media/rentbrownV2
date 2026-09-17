@@ -16,6 +16,12 @@ Secrets live in each platform's secret store — never in the repo.
 - Auth: enable email provider; JWTs verified by the API over JWKS — the API
   needs only `SUPABASE_URL` for that (plus optional `SUPABASE_JWT_SECRET`
   fallback).
+- Auth security notes: admin endpoints require `aal2` (MFA) in production —
+  enforced in the API and cannot be disabled by the `admin.mfa_required`
+  policy there. Admin session time-boxing is configured in Supabase Auth
+  settings (refresh/session lifetime); the API's
+  `admin.session_max_age_seconds` check is defence-in-depth on token `iat`
+  only, since Supabase re-issues access tokens on refresh.
 
 ## Cloud Run (API + worker) — europe-west3
 

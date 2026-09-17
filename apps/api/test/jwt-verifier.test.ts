@@ -35,12 +35,20 @@ describe("SupabaseJwtVerifier", () => {
       email: "a@b.com",
       role: "authenticated",
       app_metadata: { provider: "email" },
-      user_metadata: { username: "ada" },
+      user_metadata: { username: "ada", email_verified: true },
+      aal: "aal2",
+      amr: ["password", "totp"],
+      session_id: "sess-1",
     });
     const identity = await verifier.verify(token);
     expect(identity.subject).toBe("user-123");
     expect(identity.email).toBe("a@b.com");
     expect(identity.userMetadata.username).toBe("ada");
+    expect(identity.aal).toBe("aal2");
+    expect(identity.amr).toEqual(["password", "totp"]);
+    expect(identity.sessionId).toBe("sess-1");
+    expect(identity.emailVerified).toBe(true);
+    expect(typeof identity.issuedAt).toBe("number");
   });
 
   it("rejects a token with the wrong issuer", async () => {
