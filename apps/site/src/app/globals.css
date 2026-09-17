@@ -1,0 +1,33 @@
+/* RentBrown marketing — Warm Institutional Fintech. Serif display is
+   permitted here only (Fraunces); product UI stays Jakarta Sans. */
+
+:root {
+  --bg-canvas: #fffdf8;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f7f1ea;
+  --text-primary: #2d2624;
+  --text-secondary: #6b5d55;
+  --text-tertiary: #9a8a7f;
+  --border-default: #e8ddd4;
+  --action-primary: #5d4037;
+  --action-primary-hover: #4a332b;
+  --accent-gold: #c9a227;
+  --radius-lg: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+.display-serif {
+  font-family: Fraunces, Georgia, "Times New Roman", serif;
+}

@@ -1,0 +1,50 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+.turbo/
+
+# expo
+.expo/
+web-build/
+dist-*/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# env & secrets — NEVER commit real secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+secrets/
+
+# testing
+coverage/
+.nyc_output/
+
+# logs
+*.log
+logs/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# misc
+.vercel
+.eas/

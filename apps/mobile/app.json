@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "RentBrown",
+    "slug": "rentbrown",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "rentbrown",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rentbrown.app"
+    },
+    "android": {
+      "package": "com.rentbrown.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}
