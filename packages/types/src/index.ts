@@ -46,10 +46,81 @@ export interface NotificationPrefs {
   security?: boolean;
 }
 
+export type KycStatus =
+  "DRAFT" | "SUBMITTED" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "MORE_INFO_REQUIRED" | "EXPIRED";
+
 export interface KycSummaryDto {
-  status: string;
+  status: KycStatus | "NONE";
   tier: number;
   caseId?: string;
+  requestedTier?: number;
+  updatedAt?: string;
+  canStart: boolean;
+  nextSteps: string[];
+}
+
+export interface KycCheckDto {
+  id: string;
+  checkType: string | null;
+  idType: string | null;
+  idNumberLast4: string | null;
+  country: string | null;
+  status: string;
+  outcome: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface KycDocumentDto {
+  id: string;
+  docType: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+  createdAt: string;
+}
+
+export interface KycCaseDto {
+  id: string;
+  status: KycStatus;
+  requestedTier: number;
+  currentTier: number;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  checks: KycCheckDto[];
+  documents: KycDocumentDto[];
+}
+
+export interface KycDecisionDto {
+  id: string;
+  source: string;
+  decision: string;
+  reason: string | null;
+  fromStatus: string | null;
+  toStatus: string | null;
+  reviewerId: string | null;
+  createdAt: string;
+}
+
+/** admin view — includes provider reason codes and internal notes */
+export interface AdminKycCaseDto extends KycCaseDto {
+  userId: string;
+  userEmail: string | null;
+  providerUserId: string | null;
+  policyVersion: string | null;
+  reasonCodes: unknown;
+  notesInternal: string | null;
+  checks: Array<KycCheckDto & { reasonCodes: unknown; providerMessage: string | null }>;
+  decisions: KycDecisionDto[];
+}
+
+export interface KycGateDto {
+  required: boolean;
+  satisfied: boolean;
+  requiredTier: number;
+  currentTier: number;
+  policyKey: string;
 }
 
 export interface MeDto extends UserDto {

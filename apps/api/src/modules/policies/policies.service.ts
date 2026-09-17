@@ -60,6 +60,21 @@ export class PoliciesService {
     return value;
   }
 
+  /** value + the row's optimistic version — used to stamp policy_version */
+  async getWithVersion<T>(spec: PolicySpec<T>): Promise<{ value: T; version: number }> {
+    const value = await this.get(spec);
+    try {
+      const rows = await this.db
+        .select({ version: systemPolicies.version })
+        .from(systemPolicies)
+        .where(eq(systemPolicies.key, spec.key))
+        .limit(1);
+      return { value, version: rows[0]?.version ?? 0 };
+    } catch {
+      return { value, version: 0 };
+    }
+  }
+
   /** upsert a policy — bumps version, stamps actor, invalidates cache, audits */
   async set(key: string, value: unknown, actorId: string): Promise<void> {
     const existing = await this.db

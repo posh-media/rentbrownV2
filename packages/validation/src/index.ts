@@ -109,6 +109,67 @@ export const setPolicySchema = z.object({
   value: z.unknown(),
 });
 
+// ── KYC ───────────────────────────────────────────────────────
+export const startKycCaseSchema = z.object({
+  requestedTier: z.number().int().min(1).max(3).default(1),
+});
+
+/** per-country/per-type ID number formats — extend as countries are added */
+const ID_NUMBER_FORMATS: Record<string, Record<string, RegExp>> = {
+  NG: { NIN: /^[0-9]{11}$/, BVN: /^[0-9]{11}$/ },
+};
+
+export function kycIdNumberSchemaFor(country: string, idType: string) {
+  const pattern = ID_NUMBER_FORMATS[country]?.[idType];
+  return pattern ? z.string().regex(pattern, "invalid ID number format") : z.string().min(1);
+}
+
+export const idVerificationSchema = z.object({
+  country: z.string().length(2).toUpperCase(),
+  idType: z.string().min(2).max(32),
+  idNumber: z.string().min(4).max(32),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  dob: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
+export const kycDocTypeSchema = z.enum([
+  "ID_FRONT",
+  "ID_BACK",
+  "SELFIE",
+  "PROOF_OF_ADDRESS",
+  "OTHER",
+]);
+
+export const adminKycDecisionSchema = z.object({
+  decision: z.enum(["APPROVE", "REJECT", "REQUEST_MORE_INFO"]),
+  reason: z.string().min(3).max(1000),
+  tier: z.number().int().min(0).max(3).optional(),
+});
+
+export const adminKycNoteSchema = z.object({
+  note: z.string().min(1).max(2000),
+});
+
+export const adminKycQuerySchema = z.object({
+  status: z
+    .enum([
+      "DRAFT",
+      "SUBMITTED",
+      "IN_REVIEW",
+      "APPROVED",
+      "REJECTED",
+      "MORE_INFO_REQUIRED",
+      "EXPIRED",
+    ])
+    .optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+
 // ── PIN (RB-093 — web + mobile) ───────────────────────────────
 export const pinSchema = z
   .string()
@@ -160,6 +221,12 @@ export type RecordConsentInput = z.infer<typeof recordConsentSchema>;
 export type AdminUsersQuery = z.infer<typeof adminUsersQuerySchema>;
 export type AdminAuditQuery = z.infer<typeof adminAuditQuerySchema>;
 export type SetPolicyInput = z.infer<typeof setPolicySchema>;
+export type StartKycCaseInput = z.infer<typeof startKycCaseSchema>;
+export type IdVerificationInput = z.infer<typeof idVerificationSchema>;
+export type KycDocType = z.infer<typeof kycDocTypeSchema>;
+export type AdminKycDecisionInput = z.infer<typeof adminKycDecisionSchema>;
+export type AdminKycNoteInput = z.infer<typeof adminKycNoteSchema>;
+export type AdminKycQuery = z.infer<typeof adminKycQuerySchema>;
 export type DepositIntentInput = z.infer<typeof depositIntentSchema>;
 export type WalletInvestInput = z.infer<typeof walletInvestSchema>;
 export type DirectInvestInput = z.infer<typeof directInvestSchema>;

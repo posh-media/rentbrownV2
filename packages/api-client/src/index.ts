@@ -9,10 +9,13 @@
 
 import type {
   AccountStatus,
+  AdminKycCaseDto,
   AdminUserDto,
   ApiError,
   AuditEventDto,
   ConsentDto,
+  KycCaseDto,
+  KycSummaryDto,
   LegalDocumentDto,
   MeDto,
   Paginated,
@@ -100,6 +103,37 @@ export class ApiClient {
     return (await res.json()) as T;
   }
 
+  /** multipart upload — the browser/fetch sets the content-type boundary */
+  private async requestForm<T>(method: string, path: string, form: FormData): Promise<T> {
+    const headers: Record<string, string> = { accept: "application/json" };
+    if (this.opts.platform) headers["x-platform"] = this.opts.platform;
+    const token = await this.opts.getAccessToken?.();
+    if (token) headers.authorization = `Bearer ${token}`;
+
+    const res = await this.fetchImpl(`${this.opts.baseUrl}${path}`, {
+      method,
+      headers,
+      body: form,
+    });
+    if (!res.ok) {
+      let parsed: ApiError | undefined;
+      try {
+        parsed = (await res.json()) as ApiError;
+      } catch {
+        /* non-json error body */
+      }
+      throw new ApiClientError(
+        parsed?.error.code ?? `HTTP_${res.status}`,
+        parsed?.error.message ?? res.statusText,
+        res.status,
+        parsed?.error.requestId,
+        parsed?.error.details,
+      );
+    }
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  }
+
   // ── System ──────────────────────────────────────────────────
   health() {
     return this.request<{ status: string; ts: string }>("GET", "/health");
@@ -138,6 +172,35 @@ export class ApiClient {
     return this.request<ConsentDto>("POST", "/v1/users/me/consents", { termsVersionId });
   }
 
+  // ── KYC ─────────────────────────────────────────────────────
+  readonly kyc = {
+    status: () => this.request<KycSummaryDto>("GET", "/v1/kyc/status"),
+    startCase: (requestedTier = 1) =>
+      this.request<KycCaseDto>("POST", "/v1/kyc/cases", { requestedTier }),
+    getCase: (id: string) => this.request<KycCaseDto>("GET", `/v1/kyc/cases/${id}`),
+    submitIdVerification: (
+      caseId: string,
+      input: {
+        country: string;
+        idType: string;
+        idNumber: string;
+        firstName: string;
+        lastName: string;
+        dob?: string;
+      },
+    ) => this.request<KycCaseDto>("POST", `/v1/kyc/cases/${caseId}/checks/id-verification`, input),
+    uploadDocument: (caseId: string, docType: string, file: Blob | File, filename = "document") => {
+      const form = new FormData();
+      form.set("docType", docType);
+      form.set("file", file, filename);
+      return this.requestForm<KycCaseDto>("POST", `/v1/kyc/cases/${caseId}/documents`, form);
+    },
+    deleteDocument: (id: string) => this.request<void>("DELETE", `/v1/kyc/documents/${id}`),
+    documentUrl: (id: string) =>
+      this.request<{ url: string; expiresIn: number }>("GET", `/v1/kyc/documents/${id}/url`),
+    sync: (caseId: string) => this.request<KycCaseDto>("POST", `/v1/kyc/cases/${caseId}/sync`),
+  };
+
   // ── Admin ───────────────────────────────────────────────────
   readonly admin = {
     listUsers: (query?: { q?: string; status?: AccountStatus; cursor?: string; limit?: number }) =>
@@ -167,6 +230,33 @@ export class ApiClient {
         "GET",
         `/v1/admin/audit${qs(query as Record<string, unknown>)}`,
       ),
+    kyc: {
+      listCases: (query?: { status?: string; cursor?: string; limit?: number }) =>
+        this.request<Paginated<AdminKycCaseDto>>(
+          "GET",
+          `/v1/admin/kyc/cases${qs(query as Record<string, unknown>)}`,
+        ),
+      getCase: (id: string) => this.request<AdminKycCaseDto>("GET", `/v1/admin/kyc/cases/${id}`),
+      decide: (
+        id: string,
+        decision: "APPROVE" | "REJECT" | "REQUEST_MORE_INFO",
+        reason: string,
+        tier?: number,
+      ) =>
+        this.request<AdminKycCaseDto>("POST", `/v1/admin/kyc/cases/${id}/decision`, {
+          decision,
+          reason,
+          tier,
+        }),
+      addNote: (id: string, note: string) =>
+        this.request<void>("POST", `/v1/admin/kyc/cases/${id}/notes`, { note }),
+      sync: (id: string) => this.request<AdminKycCaseDto>("POST", `/v1/admin/kyc/cases/${id}/sync`),
+      documentUrl: (id: string) =>
+        this.request<{ url: string; expiresIn: number }>(
+          "GET",
+          `/v1/admin/kyc/documents/${id}/url`,
+        ),
+    },
   };
 
   // ── Wallet (read projections — Phase 4 implements the writer) ─

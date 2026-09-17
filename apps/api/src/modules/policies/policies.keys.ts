@@ -37,6 +37,33 @@ export const POLICY = {
     schema: z.boolean(),
     fallback: true,
   },
+  kycTiers: {
+    key: "kyc.tiers",
+    schema: z.record(z.string(), z.object({ label: z.string(), checks: z.array(z.string()) })),
+    fallback: {
+      "1": { label: "Basic identity", checks: ["ID_VERIFICATION"] },
+    } as Record<string, { label: string; checks: string[] }>,
+  },
+  kycAllowedIdTypes: {
+    key: "kyc.allowed_id_types",
+    schema: z.record(z.string(), z.array(z.string())),
+    fallback: { NG: ["NIN", "BVN"] } as Record<string, string[]>,
+  },
+  kycDocumentMaxBytes: {
+    key: "kyc.document_max_bytes",
+    schema: z.number().int().positive(),
+    fallback: 5_242_880,
+  },
+  kycDocumentAllowedTypes: {
+    key: "kyc.document_allowed_types",
+    schema: z.array(z.string()),
+    fallback: ["image/jpeg", "image/png", "application/pdf"] as string[],
+  },
+  kycCaseExpiryDays: {
+    key: "kyc.case_expiry_days",
+    schema: z.number().int().positive(),
+    fallback: 30,
+  },
 } as const satisfies Record<string, PolicySpec<unknown>>;
 
 /** key → spec lookup for the admin PUT endpoint (unknown key → 404) */

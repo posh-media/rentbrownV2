@@ -99,6 +99,46 @@ Admin endpoints (`/v1/admin/*`) require Supabase MFA (`aal2`) while the
 `admin.mfa_required` policy is true. `ADMIN_MFA_ENFORCE=false` disables the
 check for local dev only — it is ignored when `APP_ENV=production`.
 
+## KYC (Smile Identity sandbox)
+
+Set the sandbox credentials in `.env` (leave unset to exercise the
+`KYC_PROVIDER_NOT_CONFIGURED` path):
+
+```bash
+SMILE_IDENTITY_PARTNER_ID=<partner id, numeric, no leading zeros>
+SMILE_IDENTITY_API_KEY=<sandbox api key>
+SMILE_IDENTITY_ENV=sandbox
+SMILE_IDENTITY_CALLBACK_URL=<API_PUBLIC_URL>/v1/kyc/webhooks/smile-identity
+KYC_DOCUMENTS_BUCKET=kyc-documents
+```
+
+The webhook needs a public URL — the callback the provider must hit is always
+`<API_PUBLIC_URL>/v1/kyc/webhooks/smile-identity`. For local dev expose the
+API with a tunnel (`ngrok http 3001` / `cloudflared tunnel --url
+http://localhost:3001`) and set `SMILE_IDENTITY_CALLBACK_URL` to the tunnel
+URL plus that path. Callbacks are HMAC-verified
+(`Response-Signature` over `timestamp + partner_id + "sid_request"`) and
+rejected when older than 10 minutes; duplicate deliveries are deduped on
+`webhook_events(provider, provider_event_id)`.
+
+Sandbox test identities (Enhanced KYC matches on name/email, not the ID
+number — the ID number must still match `^[0-9]{11}$` for NIN/BVN):
+
+| Outcome | Last name     | Given names   | Email                            |
+| ------- | ------------- | ------------- | -------------------------------- |
+| clear   | `Clearwater`  | `Amina Fatou` | `amina.clearwater@example.com`   |
+| block   | `Dangerfield` | `Rashid Omar` | `rashid.dangerfield@example.com` |
+
+Flow: `POST /v1/kyc/cases` → `POST /v1/kyc/cases/:id/checks/id-verification`
+→ result arrives via the webhook (or `POST /v1/kyc/cases/:id/sync` to poll
+`GET /v3/status/{jobId}`). Documents upload to the private `kyc-documents`
+Supabase bucket — create it manually (see DEPLOYMENT.md); without
+`SUPABASE_SERVICE_ROLE_KEY` uploads return `STORAGE_NOT_CONFIGURED`.
+
+KYC behaviour is policy-driven (`kyc.tiers`, `kyc.allowed_id_types`,
+`kyc.document_max_bytes`, `kyc.document_allowed_types`, `kyc.case_expiry_days`,
+`kyc.withdrawal_gate`) — tune via `PUT /v1/admin/policies/:key`.
+
 ## Tests
 
 ```bash

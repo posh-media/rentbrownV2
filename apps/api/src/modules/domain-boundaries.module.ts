@@ -35,8 +35,7 @@ export class ReferralsModule {}
 @Module({})
 export class RewardsModule {}
 
-@Module({})
-export class KycModule {}
+// KYC is implemented in modules/kyc — not a stub.
 
 @Module({})
 export class NotificationsModule {}

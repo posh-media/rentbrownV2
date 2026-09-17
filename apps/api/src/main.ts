@@ -10,9 +10,11 @@ import { JsonLogger } from "./common/logging/json-logger.js";
 
 async function bootstrap() {
   const logger = new JsonLogger();
+  // rawBody: webhook signature verification needs the untouched request body
   const app = await NestFactory.create(AppModule, {
     logger,
     bufferLogs: true,
+    rawBody: true,
   });
 
   const config = app.get(AppConfigService);

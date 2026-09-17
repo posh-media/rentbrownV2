@@ -16,12 +16,12 @@ import { RbacModule } from "./modules/rbac/rbac.module.js";
 import { PoliciesModule } from "./modules/policies/policies.module.js";
 import { LegalModule } from "./modules/legal/legal.module.js";
 import { AdminModule } from "./modules/admin/admin.module.js";
+import { KycModule } from "./modules/kyc/kyc.module.js";
 import {
   FxModule,
   InvestmentsModule,
   InvestmentPlansModule,
   InvestmentRoundsModule,
-  KycModule,
   LedgerModule,
   NotificationsModule,
   PaymentsModule,

@@ -5,6 +5,8 @@ import { updateProfileSchema, type UpdateProfileInput } from "@rentbrown/validat
 import { Authenticated } from "../../common/decorators/authenticated.decorator.js";
 import { CurrentUser } from "../../common/decorators/current-user.decorator.js";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
+import { KycPolicyService } from "../kyc/kyc-policy.service.js";
+import { KycService } from "../kyc/kyc.service.js";
 import { LegalService } from "../legal/legal.service.js";
 import { RolesService } from "../rbac/roles.service.js";
 import { UsersService, type InternalUser } from "./users.service.js";
@@ -31,6 +33,8 @@ export class UsersController {
     private readonly users: UsersService,
     private readonly rolesService: RolesService,
     private readonly legal: LegalService,
+    private readonly kyc: KycService,
+    private readonly kycPolicy: KycPolicyService,
   ) {}
 
   /** returns the internal user record, provisioning it on first call */
@@ -55,10 +59,12 @@ export class UsersController {
    * yet, so withdrawal is honestly reported as unavailable rather than hidden.
    */
   private async toMeDto(user: InternalUser): Promise<MeDto> {
-    const [roles, permissions, pendingConsents] = await Promise.all([
+    const [roles, permissions, pendingConsents, kyc, withdrawalGate] = await Promise.all([
       this.rolesService.rolesFor(user.id),
       this.rolesService.permissionsFor(user.id),
       this.legal.pendingFor(user.id),
+      this.kyc.summaryFor(user.id),
+      this.kycPolicy.evaluate(user.id, "withdrawal"),
     ]);
     return {
       ...toUserDto(user),
@@ -71,11 +77,14 @@ export class UsersController {
       roles,
       permissions: [...permissions],
       pendingConsents,
-      // KYC placeholder — next milestone fills real status/tier/caseId
-      kyc: { status: "NONE", tier: 0 },
+      kyc,
       capabilities: {
-        withdrawal: { allowed: false, reason: "NOT_AVAILABLE_YET" },
-        "kyc.start": { allowed: true },
+        // withdrawals aren't built yet — honestly unavailable either way
+        withdrawal: {
+          allowed: false,
+          reason: withdrawalGate.satisfied ? "NOT_AVAILABLE_YET" : "KYC_REQUIRED",
+        },
+        "kyc.start": { allowed: kyc.canStart },
       },
     };
   }

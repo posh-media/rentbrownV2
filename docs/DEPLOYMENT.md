@@ -13,6 +13,17 @@ Secrets live in each platform's secret store — never in the repo.
 - Storage buckets (created per env): `kyc-documents` (private, signed URLs),
   `media-public` (public). Bucket policies deny unauthenticated reads on
   private buckets; API signs URLs via the service role.
+- **`kyc-documents` must be created PRIVATE by hand** — the API never creates
+  buckets or touches bucket policies at runtime: Dashboard → Storage → New
+  bucket → name `kyc-documents` → uncheck "Public bucket". Do NOT add any
+  public/anon read policy — access is only via short-lived (60s) signed URLs
+  minted by the API with the service role key after an authorization check.
+- Smile Identity (KYC): store `SMILE_IDENTITY_PARTNER_ID` and
+  `SMILE_IDENTITY_API_KEY` in GCP Secret Manager per env, set
+  `SMILE_IDENTITY_ENV=production` for prod, and set
+  `SMILE_IDENTITY_CALLBACK_URL` to
+  `https://<api-host>/v1/kyc/webhooks/smile-identity` — the same URL must be
+  registered in the Smile Identity dashboard/partner config.
 - Auth: enable email provider; JWTs verified by the API over JWKS — the API
   needs only `SUPABASE_URL` for that (plus optional `SUPABASE_JWT_SECRET`
   fallback).
