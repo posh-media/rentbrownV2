@@ -88,6 +88,16 @@ export const accountStatusEnum = pgEnum("account_status", [
   "CLOSED",
 ]);
 export type AccountStatusType = (typeof accountStatusEnum.enumValues)[number];
+export const kycStatusEnum = pgEnum("kyc_status", [
+  "DRAFT",
+  "SUBMITTED",
+  "IN_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "MORE_INFO_REQUIRED",
+  "EXPIRED",
+]);
+export type KycStatusType = (typeof kycStatusEnum.enumValues)[number];
 
 // ── Identity & RBAC ───────────────────────────────────────────
 export const users = pgTable(
@@ -441,6 +451,9 @@ export const webhookEvents = pgTable(
     eventType: varchar("event_type", { length: 128 }),
     payloadHash: varchar("payload_hash", { length: 64 }),
     status: varchar("status", { length: 32 }).notNull().default("RECEIVED"),
+    payloadRedacted: jsonb("payload_redacted"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(0),
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
     processedAt: timestamp("processed_at", { withTimezone: true }),
   },
@@ -510,7 +523,12 @@ export const kycCases = pgTable(
     provider: varchar("provider", { length: 32 }).notNull().default("SMILE_IDENTITY"),
     requestedTier: integer("requested_tier").notNull().default(1),
     currentTier: integer("current_tier").notNull().default(0),
-    status: varchar("status", { length: 32 }).notNull().default("DRAFT"),
+    status: kycStatusEnum("status").notNull().default("DRAFT"),
+    policyVersion: varchar("policy_version", { length: 32 }),
+    providerUserId: varchar("provider_user_id", { length: 128 }),
+    lastProviderSyncAt: timestamp("last_provider_sync_at", { withTimezone: true }),
+    notesInternal: text("notes_internal"), // admin-only — never returned to users
+    closedAt: timestamp("closed_at", { withTimezone: true }),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
@@ -518,43 +536,88 @@ export const kycCases = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("kyc_user_status_idx").on(t.userId, t.status)],
+  (t) => [
+    index("kyc_user_status_idx").on(t.userId, t.status),
+    // at most one open case per user
+    uniqueIndex("kyc_one_open_case_uq")
+      .on(t.userId)
+      .where(sql`status IN ('DRAFT','SUBMITTED','IN_REVIEW','MORE_INFO_REQUIRED')`),
+  ],
 );
 
-export const kycChecks = pgTable("kyc_checks", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  caseId: uuid("case_id")
-    .notNull()
-    .references(() => kycCases.id),
-  providerJobId: varchar("provider_job_id", { length: 255 }),
-  checkType: varchar("check_type", { length: 64 }),
-  result: varchar("result", { length: 64 }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const kycChecks = pgTable(
+  "kyc_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    caseId: uuid("case_id")
+      .notNull()
+      .references(() => kycCases.id),
+    providerJobId: varchar("provider_job_id", { length: 255 }),
+    checkType: varchar("check_type", { length: 64 }),
+    status: varchar("status", { length: 32 }).notNull().default("PENDING"), // PENDING|COMPLETED|FAILED
+    idType: varchar("id_type", { length: 32 }),
+    country: varchar("country", { length: 2 }),
+    // NEVER the full id number — last4 for display, salted sha256 for dedupe
+    idNumberLast4: varchar("id_number_last4", { length: 4 }),
+    idNumberHash: varchar("id_number_hash", { length: 64 }),
+    outcome: varchar("outcome", { length: 32 }),
+    reasonCodes: jsonb("reason_codes"),
+    providerMessage: text("provider_message"),
+    rawRedacted: jsonb("raw_redacted"),
+    result: varchar("result", { length: 64 }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("kyc_checks_case_idx").on(t.caseId, t.createdAt),
+    uniqueIndex("kyc_checks_job_uq")
+      .on(t.providerJobId)
+      .where(sql`provider_job_id IS NOT NULL`),
+  ],
+);
 
-export const kycDocuments = pgTable("kyc_documents", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  caseId: uuid("case_id")
-    .notNull()
-    .references(() => kycCases.id),
-  docType: varchar("doc_type", { length: 64 }).notNull(),
-  storageKey: text("storage_key"), // private bucket — never a public URL
-  providerToken: varchar("provider_token", { length: 255 }),
-  retentionStatus: varchar("retention_status", { length: 32 }).default("RETAINED"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const kycDocuments = pgTable(
+  "kyc_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    caseId: uuid("case_id")
+      .notNull()
+      .references(() => kycCases.id),
+    docType: varchar("doc_type", { length: 64 }).notNull(),
+    storageKey: text("storage_key"), // private bucket — never a public URL
+    bucket: varchar("bucket", { length: 64 }).notNull().default("kyc-documents"),
+    contentType: varchar("content_type", { length: 64 }),
+    sizeBytes: integer("size_bytes"),
+    sha256: varchar("sha256", { length: 64 }),
+    uploadedBy: uuid("uploaded_by"),
+    providerToken: varchar("provider_token", { length: 255 }),
+    retentionStatus: varchar("retention_status", { length: 32 }).default("RETAINED"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("kyc_documents_case_idx").on(t.caseId)],
+);
 
-export const kycDecisions = pgTable("kyc_decisions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  caseId: uuid("case_id")
-    .notNull()
-    .references(() => kycCases.id),
-  reviewerId: uuid("reviewer_id"),
-  decision: varchar("decision", { length: 32 }).notNull(),
-  reason: text("reason"),
-  policyVersion: varchar("policy_version", { length: 32 }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const kycDecisions = pgTable(
+  "kyc_decisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    caseId: uuid("case_id")
+      .notNull()
+      .references(() => kycCases.id),
+    checkId: uuid("check_id"),
+    reviewerId: uuid("reviewer_id"),
+    source: varchar("source", { length: 16 }).notNull().default("PROVIDER"), // PROVIDER|ADMIN
+    decision: varchar("decision", { length: 32 }).notNull(),
+    reason: text("reason"),
+    fromStatus: varchar("from_status", { length: 32 }),
+    toStatus: varchar("to_status", { length: 32 }),
+    policyVersion: varchar("policy_version", { length: 32 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("kyc_decisions_case_idx").on(t.caseId, t.createdAt)],
+);
 
 // ── Referrals & rewards ───────────────────────────────────────
 export const referralAttributions = pgTable(

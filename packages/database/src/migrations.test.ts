@@ -22,3 +22,19 @@ describe("0001_identity_rbac", () => {
     expect(setDef).toBeGreaterThan(cast);
   });
 });
+
+describe("0003_kyc_foundation", () => {
+  const sql = readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), "../drizzle/0003_kyc_foundation.sql"),
+    "utf-8",
+  );
+
+  it("converts kyc_cases.status safely: DROP DEFAULT → SET DATA TYPE … USING → SET DEFAULT", () => {
+    const drop = sql.indexOf('"kyc_cases" ALTER COLUMN "status" DROP DEFAULT');
+    const cast = sql.indexOf("SET DATA TYPE kyc_status USING status::kyc_status");
+    const setDef = sql.indexOf('"kyc_cases" ALTER COLUMN "status" SET DEFAULT \'DRAFT\'');
+    expect(drop).toBeGreaterThan(-1);
+    expect(cast).toBeGreaterThan(drop);
+    expect(setDef).toBeGreaterThan(cast);
+  });
+});

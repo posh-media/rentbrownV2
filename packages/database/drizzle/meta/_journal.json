@@ -22,6 +22,20 @@
       "when": 1789680447228,
       "tag": "0002_seed_rbac_policies_terms",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789683133057,
+      "tag": "0003_kyc_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789683158799,
+      "tag": "0004_seed_kyc_policies",
+      "breakpoints": true
     }
   ]
 }

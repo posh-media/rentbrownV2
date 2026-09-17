@@ -69,33 +69,78 @@ export interface PaymentProvider {
 
 export interface KycSubmitRequest {
   userId: string;
-  /** internal command — provider-agnostic job/check type */
-  checkType: "BASIC_KYC" | "ID_VERIFICATION" | "LIVENESS" | "DOCUMENT";
-  idType?: string; // e.g. "BVN", "NIN", "PASSPORT" — mapped per provider
-  idNumber?: string;
-  /** storage object refs for uploaded documents/selfies */
-  documentRefs?: string[];
-  metadata?: Record<string, unknown>;
+  caseId: string;
+  checkId: string;
+  checkType: "ID_VERIFICATION" | "DOCUMENT" | "LIVENESS";
+  country: string; // ISO 3166-1 alpha-2, e.g. "NG"
+  idType: string; // e.g. "NIN", "BVN" — mapped per provider
+  idNumber: string;
+  person: { firstName: string; lastName: string; email?: string; dob?: string };
+  consent: { grantedAt: Date; privacyPolicyUrl: string };
+  callbackUrl?: string;
 }
 
 export interface KycCaseHandle {
   provider: string;
-  providerCaseId: string;
+  providerJobId: string;
+  providerUserId?: string;
 }
 
 export interface KycDecision {
-  providerCaseId: string;
-  outcome: "APPROVED" | "REJECTED" | "PENDING" | "NEEDS_REVIEW";
+  providerJobId: string;
+  outcome: "APPROVED" | "REJECTED" | "PENDING" | "NEEDS_REVIEW" | "ERROR";
   reasonCodes: string[];
-  raw: unknown;
+  message?: string;
+  completedAt?: Date;
+  /** allowlisted subset of the provider payload — never raw PII */
+  rawRedacted: Record<string, unknown>;
 }
 
 export interface KycProvider {
   readonly name: string;
   submitCheck(req: KycSubmitRequest): Promise<KycCaseHandle>;
-  fetchDecision(providerCaseId: string): Promise<KycDecision>;
-  /** validate + parse a signed provider callback */
-  parseCallback(rawBody: string | Buffer, signature: string): KycDecision;
+  fetchDecision(providerJobId: string): Promise<KycDecision>;
+  /** signature + replay-window check on a raw callback — pure */
+  verifyCallback(
+    headers: Record<string, string | undefined>,
+    rawBody: Buffer | string,
+  ): { ok: boolean; reason?: string };
+  /** map a verified callback body to a normalized decision — pure */
+  parseCallback(body: unknown, headers: Record<string, string | undefined>): KycDecision;
+}
+
+const KYC_PAYLOAD_ALLOWLIST = new Set([
+  "status",
+  "message",
+  "reason",
+  "product",
+  "job_id",
+  "user_id",
+  "created_at",
+  "completed_at",
+  "partner_params",
+]);
+
+/**
+ * Allowlist redaction for provider KYC payloads — keeps outcome metadata,
+ * drops everything else. `id_fields` is reduced to its key NAMES only (never
+ * values — those are document numbers). `antifraud` keeps only its status.
+ */
+export function redactKycPayload(input: unknown): Record<string, unknown> {
+  if (typeof input !== "object" || input === null) return {};
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (KYC_PAYLOAD_ALLOWLIST.has(key)) out[key] = value;
+  }
+  const src = input as Record<string, unknown>;
+  if (typeof src.id_fields === "object" && src.id_fields !== null) {
+    out.id_fields = Object.keys(src.id_fields as Record<string, unknown>);
+  }
+  if (typeof src.antifraud === "object" && src.antifraud !== null) {
+    const af = src.antifraud as Record<string, unknown>;
+    if (typeof af.status === "string") out.antifraud = { status: af.status };
+  }
+  return out;
 }
 
 // ── Notifications ─────────────────────────────────────────────

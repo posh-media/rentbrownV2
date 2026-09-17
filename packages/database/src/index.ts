@@ -4,7 +4,7 @@ import * as schema from "./schema/index.js";
 
 export * as schema from "./schema/index.js";
 export * from "./rbac.js";
-export type { AccountStatusType } from "./schema/index.js";
+export type { AccountStatusType, KycStatusType } from "./schema/index.js";
 export type Database = NodePgDatabase<typeof schema>;
 
 export function createPool(connectionString: string): Pool {
