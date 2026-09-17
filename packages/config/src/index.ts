@@ -24,6 +24,12 @@ const envSchema = z.object({
   // Cloud Scheduler → API sweep auth (shared secret header)
   SCHEDULER_SECRET: z.string().min(32).optional(),
 
+  // Admin security
+  // dev override — "false" skips the MFA guard ONLY when APP_ENV != production
+  ADMIN_MFA_ENFORCE: z.enum(["true", "false"]).default("true"),
+  // comma-separated emails granted super_admin on first provisioning
+  BOOTSTRAP_SUPER_ADMIN_EMAILS: z.string().optional(),
+
   // Providers — optional until their phase lands
   PAYSTACK_SECRET_KEY: z.string().optional(),
   KORAPAY_SECRET_KEY: z.string().optional(),

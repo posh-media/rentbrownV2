@@ -81,6 +81,13 @@ export const withdrawalStatusEnum = pgEnum("withdrawal_status", [
   "FAILED_RELEASED",
 ]);
 export const platformEnum = pgEnum("platform_name", ["mobile", "web"]);
+export const accountStatusEnum = pgEnum("account_status", [
+  "ACTIVE",
+  "RESTRICTED",
+  "SUSPENDED",
+  "CLOSED",
+]);
+export type AccountStatusType = (typeof accountStatusEnum.enumValues)[number];
 
 // ── Identity & RBAC ───────────────────────────────────────────
 export const users = pgTable(
@@ -91,11 +98,23 @@ export const users = pgTable(
     email: varchar("email", { length: 320 }),
     phone: varchar("phone", { length: 32 }),
     displayName: varchar("display_name", { length: 120 }),
+    firstName: varchar("first_name", { length: 100 }),
+    lastName: varchar("last_name", { length: 100 }),
     username: varchar("username", { length: 30 }),
     referralCode: varchar("referral_code", { length: 64 }),
     accountCurrency: currencyEnum("account_currency").notNull().default("NGN"),
     displayCurrency: currencyEnum("display_currency").notNull().default("NGN"),
-    accountStatus: varchar("account_status", { length: 32 }).notNull().default("ACTIVE"),
+    accountStatus: accountStatusEnum("account_status").notNull().default("ACTIVE"),
+    statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
+    statusReason: text("status_reason"),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    timezone: varchar("timezone", { length: 64 }),
+    notificationPrefs: jsonb("notification_prefs")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     pinHash: text("pin_hash"), // argon2/bcrypt — never plaintext
     pinSetAt: timestamp("pin_set_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -114,12 +133,15 @@ export const roles = pgTable("roles", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 64 }).notNull().unique(),
   description: text("description"),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const permissions = pgTable("permissions", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 128 }).notNull().unique(), // e.g. "withdrawal.approve"
   description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const rolePermissions = pgTable(
@@ -657,13 +679,28 @@ export const idempotencyKeys = pgTable(
   (t) => [uniqueIndex("idem_uq").on(t.userId, t.scope, t.key)],
 );
 
-export const termsVersions = pgTable("terms_versions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  docType: varchar("doc_type", { length: 64 }).notNull(),
-  version: varchar("version", { length: 32 }).notNull(),
-  sha256: varchar("sha256", { length: 64 }),
-  publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const termsVersions = pgTable(
+  "terms_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    docType: varchar("doc_type", { length: 64 }).notNull(),
+    version: varchar("version", { length: 32 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull().default(""),
+    summary: text("summary"),
+    contentUrl: text("content_url"),
+    sha256: varchar("sha256", { length: 64 }),
+    isCurrent: boolean("is_current").notNull().default(false),
+    effectiveAt: timestamp("effective_at", { withTimezone: true }),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("terms_doc_version_uq").on(t.docType, t.version),
+    // at most one current version per document type
+    uniqueIndex("terms_current_uq")
+      .on(t.docType)
+      .where(sql`is_current = true`),
+  ],
+);
 
 export const userConsents = pgTable(
   "user_consents",
@@ -675,8 +712,13 @@ export const userConsents = pgTable(
     termsVersionId: uuid("terms_version_id")
       .notNull()
       .references(() => termsVersions.id),
+    // denormalized snapshots — queries never join back to terms_versions
+    docType: varchar("doc_type", { length: 64 }).notNull().default(""),
+    version: varchar("version", { length: 32 }).notNull().default(""),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull().defaultNow(),
     ipAddress: varchar("ip_address", { length: 64 }),
+    userAgentHash: varchar("user_agent_hash", { length: 64 }),
+    platform: platformEnum("platform"),
   },
   (t) => [uniqueIndex("consent_uq").on(t.userId, t.termsVersionId)],
 );
@@ -697,7 +739,9 @@ export const fxRates = pgTable(
 export const systemPolicies = pgTable("system_policies", {
   key: varchar("key", { length: 128 }).primaryKey(), // e.g. "withdrawal.fee"
   value: jsonb("value").notNull(),
+  description: text("description"),
   version: integer("version").notNull().default(1),
   updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
