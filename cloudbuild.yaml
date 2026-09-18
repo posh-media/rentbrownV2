@@ -1,0 +1,40 @@
+# RentBrown — build + push API and worker images to Artifact Registry.
+#
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
+#
+# Requires an Artifact Registry repo named `rentbrown` in europe-west3
+# (create once: gcloud artifacts repositories create rentbrown
+#   --repository-format=docker --location=europe-west3).
+# Deploy separately — see docs/DEPLOYMENT.md (Cloud Run section).
+substitutions:
+  _REGION: europe-west3
+  _REPO: rentbrown
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - apps/api/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/api:${SHORT_SHA}
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/api:latest
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - apps/worker/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/worker:${SHORT_SHA}
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/worker:latest
+      - .
+
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/api:${SHORT_SHA}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/api:latest
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/worker:${SHORT_SHA}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/worker:latest

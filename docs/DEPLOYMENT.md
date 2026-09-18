@@ -39,9 +39,14 @@ Secrets live in each platform's secret store — never in the repo.
 Dockerfiles build from the **repo root**:
 
 ```bash
-gcloud builds submit --tag eu-west3-docker.pkg.dev/PROJECT/rentbrown/api:SHA \
+# one-shot (root cloudbuild.yaml builds + pushes both images):
+gcloud builds submit --config cloudbuild.yaml \
+  --substitutions=SHORT_SHA=$(git rev-parse --short HEAD)
+
+# or individually:
+gcloud builds submit --tag europe-west3-docker.pkg.dev/PROJECT/rentbrown/api:SHA \
   -f apps/api/Dockerfile .
-gcloud builds submit --tag eu-west3-docker.pkg.dev/PROJECT/rentbrown/worker:SHA \
+gcloud builds submit --tag europe-west3-docker.pkg.dev/PROJECT/rentbrown/worker:SHA \
   -f apps/worker/Dockerfile .
 ```
 
@@ -116,9 +121,9 @@ client-side `(app)`/`(console)` layouts only. A later phase should add
   `development` / `preview` / `production` profiles in `eas.json`; env vars
   per profile use `EXPO_PUBLIC_*` (`EXPO_PUBLIC_API_URL`,
   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`).
-- **Founder one-time step:** `cd apps/mobile && npx eas init` to create the
-  EAS project, then paste the real project id into `extra.eas.projectId`
-  in `app.json` (currently a labelled placeholder).
+- EAS project **created and linked**: `@devposh/rentbrown`
+  (`extra.eas.projectId` in `app.json` is the real id —
+  https://expo.dev/accounts/devposh/projects/rentbrown).
 - Session persistence currently uses AsyncStorage (Supabase's official Expo
   guide). **Follow-up:** move the session to a chunked SecureStore adapter
   for hardening.
