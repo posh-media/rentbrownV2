@@ -1,26 +1,24 @@
-import { ApiStatus } from "@/components/ApiStatus";
+"use client";
 
-export default function Home() {
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Spinner } from "@rentbrown/ui";
+import { useSession } from "@/lib/auth";
+
+export default function AdminHome() {
+  const { session, loading } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) router.replace(session ? "/dashboard" : "/login");
+  }, [loading, session, router]);
+
   return (
-    <main style={{ maxWidth: 720, margin: "48px auto", padding: "0 24px" }}>
-      <p
-        style={{
-          fontSize: 12,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "var(--text-tertiary)",
-        }}
-      >
-        RentBrown V2 — internal
-      </p>
-      <h1 style={{ fontSize: 26, lineHeight: "34px", margin: "8px 0 24px" }}>Operations console</h1>
-      <div className="card">
-        <ApiStatus />
-        <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-          Admin surfaces — withdrawal queue, KYC review, RBAC management — arrive in later phases
-          behind permission-gated routes.
-        </p>
-      </div>
-    </main>
+    <div
+      className="rb-shell"
+      style={{ display: "flex", justifyContent: "center", paddingTop: 120 }}
+    >
+      <Spinner label="Loading" />
+    </div>
   );
 }

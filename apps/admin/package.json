@@ -13,6 +13,7 @@
     "@rentbrown/api-client": "workspace:*",
     "@rentbrown/design-tokens": "workspace:*",
     "@rentbrown/types": "workspace:*",
+    "@rentbrown/ui": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",
     "next": "15.1.6",
     "react": "19.0.0",

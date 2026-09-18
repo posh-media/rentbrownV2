@@ -6,6 +6,8 @@ import { createClient } from "@supabase/supabase-js";
  * never directly to Supabase tables from the client.
  */
 export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  // placeholder keeps static prerendering working when env vars are unset;
+  // real values are injected at deploy/dev time via NEXT_PUBLIC_*
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder-anon-key",
 );
