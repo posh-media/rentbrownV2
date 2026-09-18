@@ -34,6 +34,28 @@ export function theme(themeName: ThemeName = "light") {
   return resolveDeep(tokens.themes[themeName]);
 }
 
+/**
+ * Emit a theme as CSS custom properties — `:root` map consumed by web/admin
+ * stylesheets and the shared @rentbrown/ui base.css.
+ */
+export function tokensToCssVars(themeName: ThemeName = "light"): Record<string, string> {
+  const t = theme(themeName);
+  const vars: Record<string, string> = {};
+  const flat = (obj: Record<string, unknown>, path: string[]) => {
+    for (const [k, v] of Object.entries(obj)) {
+      const key = k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+      if (typeof v === "string") vars[`--${[...path, key].join("-")}`] = v;
+      else if (v !== null && typeof v === "object")
+        flat(v as Record<string, unknown>, [...path, key]);
+    }
+  };
+  flat(t as unknown as Record<string, unknown>, []);
+  for (const [k, v] of Object.entries(tokens.radius)) vars[`--radius-${k}`] = `${v}px`;
+  for (const [k, v] of Object.entries(tokens.elevation)) vars[`--shadow-${k}`] = v;
+  for (const [k, v] of Object.entries(tokens.spacing)) vars[`--space-${k}`] = `${v}px`;
+  return vars;
+}
+
 export const typography = tokens.typography;
 export const spacing = tokens.spacing;
 export const radius = tokens.radius;

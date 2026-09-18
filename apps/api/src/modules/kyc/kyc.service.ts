@@ -76,11 +76,14 @@ export class KycService {
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
-    const cases = await this.db
-      .select()
-      .from(kycCases)
-      .where(eq(kycCases.userId, userId))
-      .orderBy(desc(kycCases.createdAt));
+    const [cases, allowedIdTypes] = await Promise.all([
+      this.db
+        .select()
+        .from(kycCases)
+        .where(eq(kycCases.userId, userId))
+        .orderBy(desc(kycCases.createdAt)),
+      this.policies.get(POLICY.kycAllowedIdTypes),
+    ]);
 
     const approvedTier = cases
       .filter((c) => c.status === "APPROVED")
@@ -109,6 +112,7 @@ export class KycService {
       updatedAt: latest?.updatedAt.toISOString(),
       canStart,
       nextSteps,
+      allowedIdTypes,
     };
   }
 

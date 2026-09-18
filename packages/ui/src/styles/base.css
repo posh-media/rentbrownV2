@@ -1,0 +1,360 @@
+/* RentBrown — Warm Institutional Fintech (light).
+   Generated from @rentbrown/design-tokens themes.light via tokensToCssVars —
+   keep in sync with the package (regenerate if tokens change). */
+
+:root {
+  --bg-canvas: #fffdf8;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f7f1ea;
+  --text-primary: #2d2624;
+  --text-secondary: #6b5d55;
+  --text-tertiary: #9a8a7f;
+  --text-inverse: #fffdf8;
+  --border-default: #e8ddd4;
+  --action-primary: #5d4037;
+  --action-primary-hover: #4a332b;
+  --action-primary-text: #fffdf8;
+  --action-secondary: #efe4dc;
+  --action-secondary-text: #5d4037;
+  --status-success-fg: #2e7d32;
+  --status-success-bg: #e3f1e4;
+  --status-warning-fg: #b26a00;
+  --status-warning-bg: #fbeedb;
+  --status-error-fg: #b3261e;
+  --status-error-bg: #f9e3e1;
+  --status-info-fg: #5d4037;
+  --status-info-bg: #efe4dc;
+  --status-pending-fg: #8d6e63;
+  --status-pending-bg: #f7f1ea;
+  --accent-gold: #c9a227;
+  --accent-gold-bg: #f7efd4;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+  --shadow-sheet: 0 8px 24px rgba(62, 42, 35, 0.12);
+  --shadow-modal: 0 16px 48px rgba(62, 42, 35, 0.16);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+a {
+  color: var(--action-primary);
+}
+
+/* ── primitives ────────────────────────────────────────────── */
+
+.rb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.rb-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.rb-btn:focus-visible {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 2px;
+}
+.rb-btn--primary {
+  background: var(--action-primary);
+  color: var(--action-primary-text);
+}
+.rb-btn--primary:hover:not(:disabled) {
+  background: var(--action-primary-hover);
+}
+.rb-btn--secondary {
+  background: var(--action-secondary);
+  color: var(--action-secondary-text);
+}
+.rb-btn--ghost {
+  background: transparent;
+  color: var(--action-primary);
+  border-color: var(--border-default);
+}
+.rb-btn--destructive {
+  background: var(--status-error-fg);
+  color: #fff;
+}
+
+.rb-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sheet);
+  padding: var(--space-6);
+}
+
+.rb-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+.rb-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.rb-label .rb-required {
+  color: var(--status-error-fg);
+}
+.rb-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.rb-error {
+  font-size: 12px;
+  color: var(--status-error-fg);
+}
+.rb-input,
+.rb-select {
+  font: inherit;
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  width: 100%;
+}
+.rb-input:focus-visible,
+.rb-select:focus-visible {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 1px;
+  border-color: var(--action-primary);
+}
+.rb-input[aria-invalid="true"] {
+  border-color: var(--status-error-fg);
+}
+
+.rb-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 14px;
+}
+.rb-checkbox input {
+  margin-top: 3px;
+  accent-color: var(--action-primary);
+  width: 16px;
+  height: 16px;
+}
+
+.rb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.rb-badge--success {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+.rb-badge--warning {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+}
+.rb-badge--error {
+  background: var(--status-error-bg);
+  color: var(--status-error-fg);
+}
+.rb-badge--info {
+  background: var(--status-info-bg);
+  color: var(--status-info-fg);
+}
+.rb-badge--pending {
+  background: var(--status-pending-bg);
+  color: var(--status-pending-fg);
+}
+.rb-badge--neutral {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.rb-alert {
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: 14px;
+  line-height: 21px;
+  border: 1px solid;
+}
+.rb-alert--info {
+  background: var(--status-info-bg);
+  border-color: var(--status-info-fg);
+  color: var(--status-info-fg);
+}
+.rb-alert--success {
+  background: var(--status-success-bg);
+  border-color: var(--status-success-fg);
+  color: var(--status-success-fg);
+}
+.rb-alert--warning {
+  background: var(--status-warning-bg);
+  border-color: var(--status-warning-fg);
+  color: var(--status-warning-fg);
+}
+.rb-alert--error {
+  background: var(--status-error-bg);
+  border-color: var(--status-error-fg);
+  color: var(--status-error-fg);
+}
+
+.rb-page-header {
+  margin-bottom: var(--space-6);
+}
+.rb-page-header h1 {
+  font-size: 26px;
+  line-height: 34px;
+  margin: 0 0 var(--space-1);
+}
+.rb-page-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.rb-skeleton {
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--border-default) 50%, var(--bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: rb-shimmer 1.4s infinite;
+}
+@keyframes rb-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.rb-table-wrap {
+  overflow-x: auto;
+}
+.rb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.rb-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+}
+.rb-table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+  vertical-align: top;
+}
+.rb-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rb-empty {
+  text-align: center;
+  padding: var(--space-10) var(--space-4);
+  color: var(--text-secondary);
+}
+.rb-empty h3 {
+  margin: 0 0 var(--space-1);
+  color: var(--text-primary);
+  font-size: 18px;
+}
+.rb-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.rb-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--action-primary);
+  border-radius: 50%;
+  animation: rb-spin 0.8s linear infinite;
+}
+@keyframes rb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rb-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-2);
+}
+
+.figure-lg {
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rb-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
+.rb-stack > * + * {
+  margin-top: var(--space-4);
+}
+.rb-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.rb-row--between {
+  justify-content: space-between;
+}
+.rb-muted {
+  color: var(--text-secondary);
+}

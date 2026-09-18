@@ -57,6 +57,8 @@ export interface KycSummaryDto {
   updatedAt?: string;
   canStart: boolean;
   nextSteps: string[];
+  /** country → accepted ID types, from the kyc.allowed_id_types policy */
+  allowedIdTypes: Record<string, string[]>;
 }
 
 export interface KycCheckDto {
