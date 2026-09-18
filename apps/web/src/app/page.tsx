@@ -1,25 +1,52 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Spinner } from "@rentbrown/ui";
 import { ApiStatus } from "@/components/ApiStatus";
+import { useSession } from "@/lib/auth";
 
 export default function Home() {
-  return (
-    <main style={{ maxWidth: 720, margin: "48px auto", padding: "0 24px" }}>
-      <p
-        style={{
-          fontSize: 12,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "var(--text-tertiary)",
-        }}
+  const { session, loading } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && session) router.replace("/account");
+  }, [loading, session, router]);
+
+  if (loading || session) {
+    return (
+      <div
+        className="rb-shell"
+        style={{ display: "flex", justifyContent: "center", paddingTop: 120 }}
       >
-        RentBrown V2
-      </p>
-      <h1 style={{ fontSize: 26, lineHeight: "34px", margin: "8px 0 24px" }}>Investor portal</h1>
-      <div className="card">
-        <ApiStatus />
-        <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-          Phase 1 shell — product surfaces arrive in later phases.
-        </p>
+        <Spinner label="Loading" />
       </div>
+    );
+  }
+
+  return (
+    <main className="rb-shell" style={{ maxWidth: 720, paddingTop: 80 }}>
+      <p className="rb-eyebrow">RentBrown</p>
+      <h1 style={{ fontSize: 34, lineHeight: "42px", margin: "0 0 16px" }}>
+        Property-backed investing, built on clarity.
+      </h1>
+      <p className="rb-muted" style={{ fontSize: 16, lineHeight: "26px", maxWidth: 520 }}>
+        Invest in vetted property opportunities with fixed-term returns — every number traceable,
+        every term up front.
+      </p>
+      <div className="rb-row" style={{ marginTop: 32 }}>
+        <Link href="/signup" className="rb-btn rb-btn--primary">
+          Create an account
+        </Link>
+        <Link href="/login" className="rb-btn rb-btn--ghost">
+          Log in
+        </Link>
+      </div>
+      <footer style={{ marginTop: 96, fontSize: 12 }}>
+        <ApiStatus />
+      </footer>
     </main>
   );
 }
