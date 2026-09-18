@@ -77,24 +77,51 @@ see `apps/api/src/modules/jobs/jobs.provider.ts`). Phase 2+ adds
 `investments.maturity`, `outbox.process`, `reconciliation.*` to the same
 whitelist + worker `JobRegistry`.
 
-## Vercel (web / admin / site)
+## Vercel — three projects from one repo
 
-Three Vercel projects, each with **root directory** set to `apps/web`,
-`apps/admin`, `apps/site`. Vercel auto-detects Next.js; workspace deps are
-compiled via `transpilePackages` in each `next.config.ts`.
+Import `posh-media/rentbrownV2` **three times** in Vercel — one project per
+Next app. Each app's `vercel.json` already pins the install/build commands;
+Vercel runs them from the repo root for pnpm workspaces.
 
-- `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
-  `NEXT_PUBLIC_SUPABASE_ANON_KEY` per environment.
+| Project         | Root directory | Package            | Port (dev) |
+| --------------- | -------------- | ------------------ | ---------- |
+| rentbrown-web   | `apps/web`     | `@rentbrown/web`   | 3000       |
+| rentbrown-admin | `apps/admin`   | `@rentbrown/admin` | 3002       |
+| rentbrown-site  | `apps/site`    | `@rentbrown/site`  | 3003       |
+
+Per project:
+
+- **Node version**: 22.x (set in project settings).
+- **Environment variables** (per environment):
+  `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` — **anon key only**, never the service
+  role key.
+- `vercel.json` sets `installCommand: pnpm install --frozen-lockfile`,
+  `buildCommand: pnpm turbo run build --filter=<pkg>` and
+  `ignoreCommand: npx turbo-ignore` so unchanged apps skip builds.
 - Production branch `main`; PRs get preview deployments automatically.
-- Monorepo note: install command stays `pnpm install` (Vercel detects pnpm
-  from `pnpm-lock.yaml` at repo root).
+- Workspace deps (`@rentbrown/ui`, `api-client`, `types`, …) are built by
+  turbo before the app; Next consumes their `dist` output.
+- No secrets in `vercel.json` or source — env vars come from Vercel's
+  project settings.
+
+**Auth follow-up:** web/admin use Supabase browser sessions (localStorage),
+which are NOT visible to Next.js server rendering — route protection is
+client-side `(app)`/`(console)` layouts only. A later phase should add
+`@supabase/ssr` + Next middleware for server-side auth gating.
 
 ## Mobile (EAS)
 
-- `apps/mobile` builds via `eas build --platform android|ios`.
-- `EXPO_PUBLIC_*` vars per EAS environment profile.
-- `extra.eas.projectId` in `app.json` is a placeholder — replace with the
-  real EAS project id at first build.
+- `apps/mobile` builds via `eas build --platform android|ios` using the
+  `development` / `preview` / `production` profiles in `eas.json`; env vars
+  per profile use `EXPO_PUBLIC_*` (`EXPO_PUBLIC_API_URL`,
+  `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`).
+- **Founder one-time step:** `cd apps/mobile && npx eas init` to create the
+  EAS project, then paste the real project id into `extra.eas.projectId`
+  in `app.json` (currently a labelled placeholder).
+- Session persistence currently uses AsyncStorage (Supabase's official Expo
+  guide). **Follow-up:** move the session to a chunked SecureStore adapter
+  for hardening.
 
 ## CI/CD
 
