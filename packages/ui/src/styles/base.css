@@ -56,7 +56,11 @@ body {
   padding: 0;
   background: var(--bg-canvas);
   color: var(--text-primary);
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  font-family:
+    "Plus Jakarta Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 a {
@@ -253,7 +257,12 @@ a {
 
 .rb-skeleton {
   border-radius: var(--radius-md);
-  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--border-default) 50%, var(--bg-subtle) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 25%,
+    var(--border-default) 50%,
+    var(--bg-subtle) 75%
+  );
   background-size: 200% 100%;
   animation: rb-shimmer 1.4s infinite;
 }

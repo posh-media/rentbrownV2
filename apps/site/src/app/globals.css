@@ -25,7 +25,11 @@ body {
   padding: 0;
   background: var(--bg-canvas);
   color: var(--text-primary);
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  font-family:
+    "Plus Jakarta Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 .display-serif {
