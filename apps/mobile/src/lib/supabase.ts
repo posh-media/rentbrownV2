@@ -12,8 +12,10 @@ import { createClient } from "@supabase/supabase-js";
  * hardening (documented in docs/DEPLOYMENT.md).
  */
 export const supabase = createClient(
-  process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  // placeholder keeps web-export bundling working when env vars are unset;
+  // real values come from apps/mobile/.env (EXPO_PUBLIC_*)
+  process.env.EXPO_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co",
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder-anon-key",
   {
     auth: {
       storage: AsyncStorage,

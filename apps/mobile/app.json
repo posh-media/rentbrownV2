@@ -7,6 +7,9 @@
     "scheme": "rentbrown",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "experiments": {
+      "tsconfigPaths": false
+    },
     "plugins": ["expo-router", "expo-secure-store", "expo-font"],
     "ios": {
       "supportsTablet": true,
