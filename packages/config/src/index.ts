@@ -37,6 +37,8 @@ const envSchema = z.object({
   SMILE_IDENTITY_API_KEY: z.string().optional(),
   SMILE_IDENTITY_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
   SMILE_IDENTITY_CALLBACK_URL: z.string().url().optional(),
+  // KYC provider selection — "mock" is DEV-ONLY (factory throws in production)
+  KYC_PROVIDER: z.enum(["mock"]).optional(),
   KYC_DOCUMENTS_BUCKET: z.string().min(1).default("kyc-documents"),
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_ADMIN_CHAT_ID: z.string().optional(),

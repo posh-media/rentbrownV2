@@ -17,6 +17,8 @@ const DB_CONN_CODES = new Set([
   "08000", // connection_exception
   "08003", // connection_does_not_exist
   "08006", // connection_failure
+  "28000", // invalid_authorization_specification
+  "28P01", // invalid_password — DB credential misconfig is a 503, not a 500
 ]);
 
 /** pg/pool connectivity failures — surface 503, never the driver internals */

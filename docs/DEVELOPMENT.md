@@ -139,6 +139,20 @@ KYC behaviour is policy-driven (`kyc.tiers`, `kyc.allowed_id_types`,
 `kyc.document_max_bytes`, `kyc.document_allowed_types`, `kyc.case_expiry_days`,
 `kyc.withdrawal_gate`) — tune via `PUT /v1/admin/policies/:key`.
 
+### DEV-only mock provider
+
+No Smile credentials? Set `KYC_PROVIDER=mock` in `.env` to exercise the full
+KYC pipeline locally (case → ID check → `POST /v1/kyc/cases/:id/sync` →
+decision → admin review → signed document URLs). The mock encodes its
+verdict in the job id: a submitted **last name containing "reject"/"fail"**
+returns REJECTED, everything else APPROVED. Mock webhooks authenticate with
+the literal header `x-mock-signature: dev-mock-signature` instead of HMAC.
+
+Safety: the provider factory **throws at boot** if `KYC_PROVIDER=mock` is set
+while `APP_ENV=production` — a mock can never silently verify identities in
+prod. With `KYC_PROVIDER` unset and no Smile keys, the API boots normally and
+KYC operations return `503 KYC_PROVIDER_NOT_CONFIGURED`.
+
 ## Tests
 
 ```bash

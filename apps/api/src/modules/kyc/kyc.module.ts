@@ -13,10 +13,25 @@ import { KycController } from "./kyc.controller.js";
 import { KycWebhookController } from "./kyc-webhook.controller.js";
 import { KycPolicyService } from "./kyc-policy.service.js";
 import { KycService } from "./kyc.service.js";
+import { MockKycProvider } from "./providers/mock-kyc.provider.js";
 import {
   NotConfiguredKycProvider,
   SmileIdentityKycProvider,
 } from "./providers/smile-identity.provider.js";
+
+/** KYC provider selection — mock is DEV-ONLY and refuses to load in prod */
+export function createKycProvider(config: AppConfigService): KycProvider {
+  if (config.get("KYC_PROVIDER") === "mock") {
+    // never silently mock identity verification in production
+    if (config.isProd) {
+      throw new Error("KYC_PROVIDER=mock is forbidden when APP_ENV=production");
+    }
+    return new MockKycProvider();
+  }
+  return config.get("SMILE_IDENTITY_PARTNER_ID") && config.get("SMILE_IDENTITY_API_KEY")
+    ? new SmileIdentityKycProvider(config)
+    : new NotConfiguredKycProvider();
+}
 
 /**
  * KYC foundation — Smile Identity v3 for ID verification, Supabase Storage
@@ -33,10 +48,7 @@ import {
     {
       provide: KYC_PROVIDER,
       inject: [AppConfigService],
-      useFactory: (config: AppConfigService): KycProvider =>
-        config.get("SMILE_IDENTITY_PARTNER_ID") && config.get("SMILE_IDENTITY_API_KEY")
-          ? new SmileIdentityKycProvider(config)
-          : new NotConfiguredKycProvider(),
+      useFactory: createKycProvider,
     },
     {
       provide: STORAGE_PROVIDER,

@@ -64,6 +64,20 @@ describe("HttpExceptionFilter", () => {
     expect(body.error.message).toBe("Service temporarily unavailable");
   });
 
+  it("maps pg auth failures (28P01) to 503 DATABASE_UNAVAILABLE", () => {
+    const { host, res } = makeHost();
+    new HttpExceptionFilter(config(false)).catch(
+      Object.assign(new Error('password authentication failed for user "postgres"'), {
+        code: "28P01",
+      }),
+      host,
+    );
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+    const body = res.json.mock.calls[0]![0] as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("DATABASE_UNAVAILABLE");
+    expect(JSON.stringify(body)).not.toContain("postgres");
+  });
+
   it("maps pg AggregateError (pool connect) to 503 DATABASE_UNAVAILABLE", () => {
     const { host, res } = makeHost();
     const agg = new AggregateError([
