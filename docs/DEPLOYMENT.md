@@ -85,8 +85,22 @@ whitelist + worker `JobRegistry`.
 ## Vercel — three projects from one repo
 
 Import `posh-media/rentbrownV2` **three times** in Vercel — one project per
-Next app. Each app's `vercel.json` already pins the install/build commands;
-Vercel runs them from the repo root for pnpm workspaces.
+Next app. Each app's `vercel.json` pins the install/build/ignore commands;
+Vercel runs them from the **Root Directory** of the project (`apps/<app>`),
+and pnpm/turbo resolve the workspace root upward from there.
+
+**Required per-project dashboard settings** (dashboard values override
+`vercel.json` — leave command fields empty so the repo config applies):
+
+- **Root Directory**: `apps/web` / `apps/admin` / `apps/site` respectively.
+- **Framework Preset**: `Next.js`.
+- **Build Command / Output Directory / Install Command**: leave unset —
+  they are defined in each app's `vercel.json`. A dashboard override
+  (e.g. a default `npm install`) fails immediately on `workspace:*`
+  dependencies (`EUNSUPPORTEDPROTOCOL`).
+- **Package manager**: `packageManager: pnpm@9.15.9` is declared in both
+  the repo root and each app's `package.json`, so Corepack provides the
+  correct pnpm even if the lockfile is only at the workspace root.
 
 | Project         | Root directory | Package            | Port (dev) |
 | --------------- | -------------- | ------------------ | ---------- |
@@ -103,7 +117,13 @@ Per project:
   role key.
 - `vercel.json` sets `installCommand: pnpm install --frozen-lockfile`,
   `buildCommand: pnpm turbo run build --filter=<pkg>` and
-  `ignoreCommand: npx turbo-ignore` so unchanged apps skip builds.
+  `ignoreCommand: npx turbo-ignore @rentbrown/<pkg>` so unchanged apps
+  skip builds. `turbo-ignore` fails open — on any error it proceeds with
+  the deployment rather than skipping.
+- Troubleshooting: `EUNSUPPORTEDPROTOCOL workspace:*` or
+  `pnpm: command not found` in a build log means Vercel used npm/yarn —
+  check for a dashboard Install Command override and confirm the Root
+  Directory is set so the app's `packageManager` field is read.
 - Production branch `main`; PRs get preview deployments automatically.
 - Workspace deps (`@rentbrown/ui`, `api-client`, `types`, …) are built by
   turbo before the app; Next consumes their `dist` output.
