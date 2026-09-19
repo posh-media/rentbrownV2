@@ -1,4 +1,4 @@
-import { ApiClient, ApiClientError } from "@rentbrown/api-client";
+import { ApiClient, ApiClientError, envUrlOr } from "@rentbrown/api-client";
 import { supabase } from "./supabase";
 
 /**
@@ -7,7 +7,11 @@ import { supabase } from "./supabase";
  * computes financial values or authorization decisions.
  */
 export const api = new ApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",
+  baseUrl: envUrlOr(
+    process.env.NEXT_PUBLIC_API_URL,
+    "http://localhost:3001",
+    "NEXT_PUBLIC_API_URL",
+  ),
   platform: "web",
   getAccessToken: async () => (await supabase.auth.getSession()).data.session?.access_token ?? null,
 });

@@ -1,5 +1,6 @@
 import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { envOr, envUrlOr } from "@rentbrown/api-client";
 import { createClient } from "@supabase/supabase-js";
 
 /**
@@ -12,10 +13,18 @@ import { createClient } from "@supabase/supabase-js";
  * hardening (documented in docs/DEPLOYMENT.md).
  */
 export const supabase = createClient(
-  // placeholder keeps web-export bundling working when env vars are unset;
-  // real values come from apps/mobile/.env (EXPO_PUBLIC_*)
-  process.env.EXPO_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co",
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder-anon-key",
+  // placeholder keeps web-export bundling working when env vars are unset,
+  // empty, or malformed — `??` alone would pass "" through to createClient
+  envUrlOr(
+    process.env.EXPO_PUBLIC_SUPABASE_URL,
+    "https://placeholder.supabase.co",
+    "EXPO_PUBLIC_SUPABASE_URL",
+  ),
+  envOr(
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    "placeholder-anon-key",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+  ),
   {
     auth: {
       storage: AsyncStorage,

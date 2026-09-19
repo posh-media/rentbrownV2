@@ -264,3 +264,30 @@ export class ApiClient {
     return this.request<WalletSummaryDto>("GET", "/v1/wallet/summary");
   }
 }
+
+/**
+ * Normalizes an inlined public env value — `??` misses empty strings, which
+ * crash `createClient`/URL consumers at module load during static prerender.
+ * Call sites must pass the literal `process.env.NEXT_PUBLIC_*`/`EXPO_PUBLIC_*`
+ * expression so bundlers can inline it.
+ */
+export function envOr(value: string | undefined, fallback: string, name = "env"): string {
+  const v = value?.trim();
+  if (v) return v;
+  if (value !== undefined) console.warn(`[rentbrown] ${name} is empty — using fallback`);
+  return fallback;
+}
+
+/** envOr + http(s) URL validation — malformed values fall back too */
+export function envUrlOr(value: string | undefined, fallback: string, name = "env"): string {
+  const v = envOr(value, "", name);
+  if (!v) return fallback;
+  try {
+    const url = new URL(v);
+    if (url.protocol === "http:" || url.protocol === "https:") return v;
+  } catch {
+    /* invalid — fall through */
+  }
+  console.warn(`[rentbrown] ${name} is not a valid http(s) URL — using fallback`);
+  return fallback;
+}
